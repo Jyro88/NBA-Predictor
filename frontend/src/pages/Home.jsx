@@ -1,22 +1,36 @@
-import { useEffect, useState } from 'react'
-import GameCard from '../components/GameCard'
+import { useEffect, useState } from 'react';
+import GameCard from '../components/GameCard';
 
 export default function Home() {
-  const [games, setGames] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedIndex, setExpandedIndex] = useState(null); // 👈 Track which card is expanded
 
   useEffect(() => {
     fetch('http://localhost:5000/api/games/today')
       .then(res => res.json())
       .then(data => {
-        setGames(data)
-        setLoading(false)
+        setGames(data);
+        setLoading(false);
       })
       .catch(err => {
-        console.error('Error fetching games:', err)
-        setLoading(false)
-      })
-  }, [])
+        console.error('Error fetching games:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const testBoxScore = {
+    homePlayers: [
+      { name: 'Stephen Curry', min: 36, reb: 5, ast: 7, pts: 30 },
+      { name: 'Klay Thompson', min: 34, reb: 4, ast: 2, pts: 22 },
+      { name: 'Draymond Green', min: 32, reb: 9, ast: 8, pts: 12 },
+    ],
+    awayPlayers: [
+      { name: 'LeBron James', min: 38, reb: 8, ast: 9, pts: 28 },
+      { name: 'Anthony Davis', min: 36, reb: 10, ast: 3, pts: 24 },
+      { name: "D'Angelo Russell", min: 30, reb: 2, ast: 6, pts: 18 },
+    ]
+  };
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-10">
@@ -52,11 +66,20 @@ export default function Home() {
               homeLogo={`/Team_Logos/${game.homeTeam}.png`}
               awayLogo={`/Team_Logos/${game.awayTeam}.png`}
               status={game.status}
-              time={game.status} // fallback for upcoming games
+              time={game.status}
+              isExpanded={expandedIndex === index}
+              onClick={() =>
+                setExpandedIndex(expandedIndex === index ? null : index)
+              }
+              boxScoreData={{
+                ...testBoxScore,
+                homeTeam: game.homeTeam,
+                awayTeam: game.awayTeam,
+              }}
             />
           ))}
         </div>
       )}
     </div>
-  )
+  );
 }
