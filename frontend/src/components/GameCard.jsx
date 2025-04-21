@@ -12,77 +12,94 @@ export default function GameCard({
   status,
   onClick,
   isExpanded,
-  boxScoreData,
 }) {
-  const [prediction, setPrediction] = useState(null);
+  const [winner, setWinner] = useState(null);
+  const [confidence, setConfidence] = useState(null);
+  const [predictedScore, setPredictedScore] = useState({ home: 0, away: 0 });
+  const [boxScoreData, setBoxScoreData] = useState(null);
 
+  //Gets the boxscores from the Flask backend
   useEffect(() => {
-    const fetchPrediction = async () => {
+    const fetchBoxScores = async () => {
       try {
-        const res = await axios.post('http://localhost:5000/predict', {
-          home_team: homeTeam,
-          away_team: awayTeam,
-        });
-        setPrediction(res.data);
+        const res = await axios.get('http://localhost:5000/api/predict/boxscore');
+        const data = res.data;
+        const matchupKey = `${homeTeam} vs ${awayTeam}`;
+        const matchupData = data[matchupKey];
+        if (matchupData) {
+          setBoxScoreData(matchupData);
+        }
       } catch (err) {
-        console.error('Prediction error:', err);
+        console.error('Box score prediction error:', err);
       }
     };
 
-    fetchPrediction();
-  }, [homeTeam, awayTeam]);
+    if (isExpanded) {
+      fetchBoxScores();
+    }
+  }, [isExpanded, homeTeam, awayTeam]);
+
+  // Sums and rounds up each of the player's points for a predicted total for each team
+  useEffect(() => {
+    if (boxScoreData) {
+      const homeTotal = boxScoreData.homePlayers.reduce((sum, p) => sum + p.pts, 0);
+      const awayTotal = boxScoreData.awayPlayers.reduce((sum, p) => sum + p.pts, 0);
+      setPredictedScore({
+        home: Math.round(homeTotal),
+        away: Math.round(awayTotal),
+      });
+      setWinner(homeTotal > awayTotal ? homeTeam : awayTeam);
+      setConfidence(Math.abs(homeTotal - awayTotal).toFixed(1));
+    }
+  }, [boxScoreData, homeTeam, awayTeam]);
 
   return (
     <div className="rounded-2xl shadow-lg overflow-hidden text-white border border-gray-800">
-      {/* Clickable Game Card */}
       <div
         onClick={onClick}
         className="bg-gray-900 p-6 md:p-8 flex items-center justify-between cursor-pointer hover:bg-gray-800 transition"
       >
-        {/* Left Side: Logos + Score */}
         <div className="flex items-center space-x-6">
           <img src={awayLogo} alt={awayTeam} className="h-16 w-16" />
           <div className="text-center text-lg md:text-xl">
             <div className="text-gray-300">
-              {status === 'live' ? (
-                <span className="text-red-500 font-bold">LIVE</span>
-              ) : (
-                time
-              )}
+              {status === 'live' ? <span className="text-red-500 font-bold">LIVE</span> : time}
             </div>
             {score && <div className="font-bold text-white">{score}</div>}
+            {(winner && predictedScore) && (
+              <div className="text-sm text-gray-400 mt-1">
+                Predicted:{" "}
+                <span className={winner === awayTeam ? 'text-blue-400 font-bold' : ''}>
+                  {awayTeam} {predictedScore.away}
+                </span>{" "}
+                -{" "}
+                <span className={winner === homeTeam ? 'text-blue-400 font-bold' : ''}>
+                  {predictedScore.home} {homeTeam}
+                </span>
+              </div>
+            )}
           </div>
           <img src={homeLogo} alt={homeTeam} className="h-14 w-14" />
         </div>
 
-        {/* Right Side: Prediction */}
         <div className="text-right space-y-2">
-          <div className="text-white font-bold text-lg md:text-2xl">
-            {prediction ? prediction.winner : 'Loading...'}
+          <div className="text-white text-sm font-semibold uppercase tracking-wide">
+            Predicted Winner:
           </div>
-          <div className="bg-gray-700 h-3 md:h-4 w-28 md:w-32 rounded-full overflow-hidden">
-            <div
-              className="bg-blue-400 h-full rounded-full transition-all duration-500"
-              style={{
-                width: prediction
-                  ? `${Math.min(prediction.confidence * 100, 100)}%`
-                  : '0%',
-              }}
-            ></div>
-          </div>
-          <div className="text-sm text-gray-300">
-            {prediction
-              ? `${(prediction.confidence * 100).toFixed(1)}% Confidence`
-              : ''}
+          <div
+            className={`text-xl md:text-2xl font-bold ${
+              winner === homeTeam ? 'text-blue-400' : winner === awayTeam ? 'text-blue-400' : ''
+            }`}
+          >
+            {winner || 'Loading...'}
           </div>
         </div>
       </div>
 
-      {/* Dropdown Box Score */}
       {isExpanded && boxScoreData && (
         <BoxScoreTabs
-          homeTeam={boxScoreData.homeTeam}
-          awayTeam={boxScoreData.awayTeam}
+          homeTeam={homeTeam}
+          awayTeam={awayTeam}
           homePlayers={boxScoreData.homePlayers}
           awayPlayers={boxScoreData.awayPlayers}
         />

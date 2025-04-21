@@ -3,19 +3,7 @@ import { useState } from 'react';
 export default function BoxScoreTabs({ homeTeam, awayTeam, homePlayers, awayPlayers }) {
   const [activeTab, setActiveTab] = useState('home');
 
-  const testHomePlayers = [
-    { name: 'Stephen Curry', min: 36, reb: 5, ast: 7, pts: 30 },
-    { name: 'Klay Thompson', min: 34, reb: 4, ast: 2, pts: 22 },
-    { name: 'Draymond Green', min: 32, reb: 9, ast: 8, pts: 12 },
-  ];
-
-  const testAwayPlayers = [
-    { name: 'LeBron James', min: 38, reb: 8, ast: 9, pts: 28 },
-    { name: 'Anthony Davis', min: 36, reb: 10, ast: 3, pts: 24 },
-    { name: 'D\'Angelo Russell', min: 30, reb: 2, ast: 6, pts: 18 },
-  ];
-
-  const selectedPlayers = activeTab === 'home' ? testHomePlayers : testAwayPlayers;
+  const selectedPlayers = activeTab === 'home' ? homePlayers : awayPlayers;
   const selectedTeam = activeTab === 'home' ? homeTeam : awayTeam;
 
   return (
